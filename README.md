@@ -1,66 +1,219 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## API DE USUARIOS Y MUSICA CCOA -EBDE
+Este proyecto es una API RESTful desarrollada con Laravel para la gestión de usuarios y canciones. Ofrece tokens  para la autenticación de usuarios, administración igual un CRUD de perfiles y operaciones CRUD relacionadas con canciones.
 
-## About Laravel
+## AUTENTICAZION  DE LA  API
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- `/api/MasterTokenController`: Generar un token maestro
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Entrada: El cliente envía una secret_key a este endpoint.
+- Validación: Verifica si la secret_key es válida.
+- Usuario maestro:
+- Crea o actualiza un usuario maestro utilizando datos predefinidos en las variables de entorno.
+- Token: Genera un token de acceso para este usuario maestro.
+- Respuesta: Devuelve el token maestro en caso de éxito o un mensaje de error en caso de fallo.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
+### SONG CONTROLLER
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Gestiona las operaciones CRUD para la parte de las canciones.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+#### Funciones principales:
+- `index()`: Recupera y devuelve todas las canciones almacenadas en la base de datos.
+            Si la operación es exitosa, responde con los datos de las canciones en formato JSON con un código HTTP 200.
+            Si ocurre un error, registra el problema y devuelve un código HTTP 500.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```public function index()
+{
+    try {
+        Log::info('Fetching all songs');
+        $songs = Song::all();
+        return response()->json($songs, 200);
+    } catch (Exception $e) {
+        Log::error('Error fetching songs: ' . $e->getMessage());
+        return response()->json(['error' => 'Error fetching songs'], 500);
+    }
+}
+```
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### UsuarioController
 
-### Premium Partners
+Maneja las operaciones de gestión de usuarios.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+#### Funciones principales:
 
-## Contributing
+- **`index()`**
+  Lista todos los usuarios.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+  ```php
+  public function index()
+  {
+      $usuarios = Usuario::all();
+      return response()->json($usuarios);
+  }
+  ```
 
-## Code of Conduct
+- **`store(Request $request)`**
+  Crea un nuevo usuario.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+  ```php
+  public function store(Request $request)
+  {
+      $request->validate([
+          'nombre' => 'required|string|max:255',
+          'apellido' => 'required|string|max:255',
+          'correo_electronico' => 'required|string|email|max:255|unique:usuarios',
+          'contraseña' => 'required|string|min:8',
+          'fecha_nacimiento' => 'required|date',
+      ]);
 
-## Security Vulnerabilities
+      $usuario = new Usuario($request->except('contraseña'));
+      $usuario->contraseña = Hash::make($request->contraseña);
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+      $usuario->save();
 
-## License
+      return response()->json($usuario, 201);
+  }
+  ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **`show(Usuario $usuario)`**
+  Obtiene detalles de un usuario específico.
+
+  ```php
+  public function show(Usuario $usuario)
+  {
+      return response()->json($usuario);
+  }
+  ```
+
+- **`update(Request $request, Usuario $usuario)`**
+  Actualiza un usuario.
+
+  ```php
+  public function update(Request $request, Usuario $usuario)
+  {
+      $request->validate([
+          'nombre' => 'sometimes|string|max:255',
+          'apellido' => 'sometimes|string|max:255',
+          'correo_electronico' => 'sometimes|string|email|max:255|unique:usuarios,correo_electronico,' . $usuario->id,
+          'contraseña' => 'nullable|string|min:8',
+          'fecha_nacimiento' => 'sometimes|date',
+      ]);
+
+      $data = $request->except('contraseña');
+      if ($request->has('contraseña')) {
+          $data['contraseña'] = Hash::make($request->contraseña);
+      }
+
+      $usuario->update($data);
+
+      return response()->json($usuario);
+  }
+  ```
+
+- **`destroy(Usuario $usuario)`**
+  Elimina un usuario.
+
+  ```php
+  public function destroy(Usuario $usuario)
+  {
+      $usuario->delete();
+      return response()->json(null, 204);
+  }
+  ```
+
+### LoginController
+
+Gestiona la autenticación de usuarios.
+
+#### Funciones principales:
+
+- **`login(Request $request)`**
+  Autentica un usuario y devuelve un token.
+
+  ```php
+  public function login(Request $request)
+  {
+      $request->validate([
+          'correo_electronico' => 'required|string|email',
+          'contraseña' => 'required|string',
+      ]);
+
+      $usuario = Usuario::where('correo_electronico', $request->correo_electronico)->first();
+
+      if (!$usuario || !Hash::check($request->contraseña, $usuario->contraseña)) {
+          return response()->json(['error' => 'Credenciales inválidas'], 401);
+      }
+
+      $token = $usuario->createToken('auth_token')->plainTextToken;
+
+      return response()->json(['token' => $token]);
+  }
+  ```
+
+- **`logout(Request $request)`**
+  Cierra sesión de un usuario.
+
+  ```php
+  public function logout(Request $request)
+  {
+      $request->user()->currentAccessToken()->delete();
+      return response()->json(['message' => 'Sesión cerrada correctamente']);
+  }
+  ```
+
+- **`user(Request $request)`**
+  Obtiene información del usuario autenticado.
+
+  ```php
+  public function user(Request $request)
+  {
+      return response()->json($request->user());
+  }
+  
+
+
+## Variables de Entorno
+
+Asegúrate de configurar las siguientes variables de entorno en tu archivo `.env`:
+
+- `DB_CONNECTION`: Tipo de conexión de base de datos (ej. mysql)
+- `DB_HOST`: Host de la base de datos
+- `DB_PORT`: Puerto de la base de datos
+- `DB_DATABASE`: Nombre de la base de datos
+- `DB_USERNAME`: Nombre de usuario de la base de datos
+- `DB_PASSWORD`: Contraseña de la base de datos
+- `MASTER_USER_EMAIL`: Correo electrónico para el usuario maestro
+- `MASTER_USER_NAME`: Nombre para el usuario maestro
+- `MASTER_USER_PASSWORD`: Contraseña para el usuario maestro
+- `MASTER_SECRET_KEY`: Clave secreta para generar el token maestro
+
+## Detalles de Implementación
+
+### Rutas API (api.php)
+
+Las rutas principales de la API están definidas en el archivo `routes/api.php`:
+
+```php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\UsuarioController;
+use App\Http\Controllers\API\MasterTokenController;
+use App\Http\Controllers\API\LoginController;
+use App\Http\Controllers\API\PokemonController;
+
+Route::post('/generate-master-token', [MasterTokenController::class, 'generateMasterToken']);
+Route::post('/login', [LoginController::class, 'login']);
+Route::middleware('auth:sanctum')->get('/user', [LoginController::class, 'user']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('usuarios', UsuarioController::class);
+    Route::apiResource('pokemonoes', PokemonController::class);
+});
+```
+
+### Conclusión
+
+Esta API RESTful basada en Laravel ofrece una solución robusta y escalable para la gestión de usuarios y datos de Pokémon. Con características como autenticación mediante tokens JWT, carga de archivos, y un sistema de gestión de datos bien estructurado, proporciona una base sólida para proyectos futuros. 
+
+El diseño modular de los controladores, combinado con el uso de migraciones y variables de entorno, asegura una fácil personalización y adaptabilidad a diferentes necesidades. Este proyecto demuestra el poder de Laravel como un framework versátil para construir aplicaciones web modernas y seguras.
